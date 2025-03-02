@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Login from './Login';
 import Rutas from './Rutas';
+import Horarios from './Horarios';
 
 function App() {
     const [currentPage, setCurrentPage] = useState('home');
@@ -11,6 +12,8 @@ function App() {
                 return <Login />;
             case 'rutas':
                 return <Rutas />;
+            case 'horarios':
+                return <Horarios />;
             case 'home':
             default:
                 return (
@@ -36,6 +39,11 @@ function App() {
                         <li style={{ display: 'inline', margin: '0 15px' }}>
                             <button onClick={() => setCurrentPage('rutas')} style={{ color: 'white', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
                                 Rutas
+                            </button>
+                        </li>
+                        <li style={{ display: 'inline', margin: '0 15px' }}>
+                            <button onClick={() => setCurrentPage('horarios')} style={{ color: 'white', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                                Horarios
                             </button>
                         </li>
                         <li style={{ display: 'inline', margin: '0 15px' }}>
