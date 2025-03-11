@@ -6,6 +6,7 @@ import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate } from "react-router-dom";
+import logo from "../assets/logo.png";
 
 const HeaderLogin = () => {
   const navigate = useNavigate();
@@ -16,7 +17,10 @@ const HeaderLogin = () => {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static" sx={{ backgroundColor: "green" }}>
+      <AppBar
+        position="fixed"
+        sx={{ width: "100wv", backgroundColor: "green" }}
+      >
         <Toolbar>
           <IconButton
             size="large"
@@ -29,6 +33,18 @@ const HeaderLogin = () => {
             <ArrowBackIcon />
           </IconButton>
 
+          {/* Logo en el navbar */}
+          <Box sx={{ display: "flex", alignItems: "center", marginRight: 2 }}>
+            <img
+              src={logo}
+              alt="Logo"
+              style={{
+                width: 40,
+                height: "auto",
+                marginRight: 10,
+              }}
+            />
+          </Box>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             AvilaMET
           </Typography>

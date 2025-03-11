@@ -9,6 +9,7 @@ import Button from "@mui/material/Button";
 import { styled, alpha } from "@mui/material/styles";
 import SearchIcon from "@mui/icons-material/Search";
 import InputBase from "@mui/material/InputBase";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
 
@@ -57,6 +58,9 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 const Header = () => {
   const navigate = useNavigate();
 
+  const handleHomeRedirect = () => {
+    navigate("/");
+  };
   const handleLoginRedirect = () => {
     navigate("/login");
   };
@@ -68,6 +72,16 @@ const Header = () => {
         sx={{ width: "100wv", backgroundColor: "green" }}
       >
         <Toolbar>
+          <IconButton
+            size="large"
+            edge="start"
+            color="inherit"
+            aria-label="back"
+            onClick={handleHomeRedirect}
+            sx={{ mr: 2 }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
           {/* Logo en el navbar */}
           <Box sx={{ display: "flex", alignItems: "center", marginRight: 2 }}>
             <img

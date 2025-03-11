@@ -1,16 +1,19 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getFirestore } from "firebase/firestore"; // Importar Firestore
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAFz-LkGp2yOeptbK0WMSqnsUD4TJfYfYQ",
-  authDomain: "agrupamet-cab92.firebaseapp.com",
-  projectId: "agrupamet-cab92",
-  storageBucket: "agrupamet-cab92.firebasestorage.app",
-  messagingSenderId: "341646564625",
-  appId: "1:341646564625:web:ebd071b26fb5df5af4c0b0",
-  measurementId: "G-9FKHLB7RG6",
+  apiKey: "AIzaSyAwpYZoQboiXtkr3qNq9pcRDF-7RFD_Shs",
+  authDomain: "avilametest.firebaseapp.com",
+  projectId: "avilametest",
+  storageBucket: "avilametest.firebasestorage.app",
+  messagingSenderId: "954043017357",
+  appId: "1:954043017357:web:90fa32b3977515666e9ac4",
 };
-
 const app = initializeApp(firebaseConfig);
+
 export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();
+export const db = getFirestore(app); // Inicializa Firestore
+
 export default app;

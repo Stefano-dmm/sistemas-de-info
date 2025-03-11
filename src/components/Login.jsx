@@ -9,8 +9,11 @@ import {
   Stack,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase";
+import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "../firebase";
+import backgroundImage from "../assets/avila.png";
+import googleLogo from "../assets/gmlogoblanco.png";
+import facebookLogo from "../assets/fblogoblanco.png";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -35,106 +38,166 @@ const Login = () => {
     }
   };
 
-  const handleGoogleLogin = () => {};
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      console.log("Usuario logueado con Google:", user);
+      navigate("/");
+    } catch (error) {
+      console.error("Error al iniciar sesión con Google:", error);
+      setError("Hubo un error al intentar iniciar sesión con Google.");
+    }
+  };
 
   const handleFacebookLogin = () => {};
 
-  const goToRegister = () => {
-    navigate("/register");
-  };
-
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background:
-          'url("https://via.placeholder.com/1920x1080") no-repeat center center',
-        backgroundSize: "cover",
-      }}
-    >
+    <>
       <HeaderLogin />
-      <Container maxWidth="sm" sx={{ mt: 5 }}>
+      <Box sx={{ position: "relative", minHeight: "100vh", width: "100vw" }}>
+        {/* Fondo con overlay */}
         <Box
           sx={{
-            p: 4,
-            backgroundColor: "rgba(255,255,255,0.9)",
-            borderRadius: 2,
-            boxShadow: 3,
-            textAlign: "center",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundImage: `url(${backgroundImage})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+            },
+          }}
+        />
+        {/* Contenedor centrado para el formulario */}
+        <Container
+          maxWidth="sm"
+          sx={{
+            position: "relative",
+            zIndex: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "100vh",
           }}
         >
-          <Typography variant="h4" gutterBottom>
-            Bienvenido
-          </Typography>
-          <Typography variant="h6" gutterBottom>
-            Inicia sesión y comienza a explorar
-          </Typography>
-
-          {error && (
-            <Typography variant="body1" color="error" sx={{ mb: 2 }}>
-              {error}
+          <Box
+            sx={{
+              p: 4,
+              backgroundColor: "rgba(255,255,255,0.9)",
+              borderRadius: 2,
+              boxShadow: 3,
+              textAlign: "center",
+              width: "100%",
+              maxWidth: "400px",
+            }}
+          >
+            <Typography variant="h4" gutterBottom>
+              Bienvenido
             </Typography>
-          )}
 
-          <TextField
-            label="Dirección de correo electrónico"
-            variant="outlined"
-            fullWidth
-            sx={{ mb: 2 }}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <TextField
-            label="Contraseña"
-            type="password"
-            variant="outlined"
-            fullWidth
-            sx={{ mb: 2 }}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+            {error && (
+              <Typography variant="body1" color="error" sx={{ mb: 2 }}>
+                {error}
+              </Typography>
+            )}
 
-          <Button
-            variant="contained"
-            color="success"
-            onClick={handleLogin}
-            fullWidth
-            sx={{ mb: 2 }}
-          >
-            Iniciar sesión
-          </Button>
+            <TextField
+              label="Correo electrónico"
+              variant="outlined"
+              fullWidth
+              sx={{ mb: 2 }}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <TextField
+              label="Contraseña"
+              type="password"
+              variant="outlined"
+              fullWidth
+              sx={{ mb: 2 }}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
 
-          <Stack
-            direction="row"
-            spacing={2}
-            justifyContent="center"
-            sx={{ mb: 2 }}
-          >
             <Button
               variant="contained"
-              color="primary"
-              onClick={handleGoogleLogin}
+              color="success"
+              onClick={handleLogin}
+              fullWidth
+              sx={{ mb: 2 }}
             >
-              Google
+              Iniciar sesión
             </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleFacebookLogin}
-            >
-              Facebook
-            </Button>
-          </Stack>
 
-          <Typography variant="body2">
-            ¿No tienes cuenta?
-            <Button variant="text" onClick={goToRegister}>
-              Regístrate
-            </Button>
-          </Typography>
-        </Box>
-      </Container>
-    </div>
+            <Stack
+              direction="row"
+              spacing={2}
+              justifyContent="center"
+              sx={{ mb: 2 }}
+            >
+              <Button
+                variant="contained"
+                color="success"
+                onClick={handleGoogleLogin}
+                sx={{
+                  width: "50px",
+                  height: "50px",
+                  minWidth: "unset",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <img
+                  src={googleLogo}
+                  alt="Google"
+                  style={{ width: "35px", height: "35px" }}
+                />
+              </Button>
+
+              <Button
+                variant="contained"
+                color="success"
+                onClick={handleFacebookLogin}
+                sx={{
+                  width: "50px",
+                  height: "50px",
+                  minWidth: "unset",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <img
+                  src={facebookLogo}
+                  alt="Facebook"
+                  style={{ width: "43px", height: "43px" }}
+                />
+              </Button>
+            </Stack>
+
+            <Typography variant="body2">
+              ¿No tienes cuenta?{" "}
+              <Button variant="text" onClick={() => navigate("/register")}>
+                Regístrate
+              </Button>
+            </Typography>
+          </Box>
+        </Container>
+      </Box>
+    </>
   );
 };
 
