@@ -34,64 +34,12 @@ const AdminExcursiones = () => {
   // --- Verificación de rol ADMIN ---
   const { user, authLoading } = useAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    if (!authLoading) {
-      if (!user || user.role !== "admin") {
-        // Si no hay user o no es admin, redirigimos a home
-        router.push("/");
-      }
-    }
-  }, [user, authLoading, router]);
-
-  // Si sigue cargando auth, no renderizamos nada (ni la redirección)
-  if (authLoading) return null;
-  // Si ya hay user pero su rol NO es admin, retornamos null para que no pinte nada
-  if (user && user.role !== "admin") return null;
-
-  // ================== Sección para LISTADO de excursiones ==================
   const [excursionsList, setExcursionsList] = useState([]);
   const [loadingExcursionsList, setLoadingExcursionsList] = useState(true);
   const [errorList, setErrorList] = useState("");
-
-  const loadExcursions = async () => {
-    try {
-      setLoadingExcursionsList(true);
-      setErrorList("");
-      const snapshot = await getDocs(collection(db, "excursiones"));
-      const data = snapshot.docs.map((docSnap) => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      }));
-      setExcursionsList(data);
-    } catch (err) {
-      console.error("Error al cargar excursiones:", err);
-      setErrorList("Error al cargar excursiones.");
-    } finally {
-      setLoadingExcursionsList(false);
-    }
-  };
-
   useEffect(() => {
     loadExcursions();
   }, []);
-
-  // Función para ELIMINAR una excursión
-  const handleDeleteExcursion = async (excursion) => {
-    const confirmDelete = window.confirm(
-      `¿Estás seguro de que deseas eliminar la excursión con ID: ${excursion.id}?`
-    );
-    if (!confirmDelete) return;
-
-    try {
-      await deleteDoc(doc(db, "excursiones", excursion.id));
-      setExcursionsList((prev) => prev.filter((ex) => ex.id !== excursion.id));
-    } catch (err) {
-      console.error("Error al eliminar la excursión", err);
-      alert("Ocurrió un error al eliminar la excursión.");
-    }
-  };
-
   // ================== Sección para CREAR excursiones ==================
   const [showCreationForm, setShowCreationForm] = useState(false);
 
@@ -112,8 +60,6 @@ const AdminExcursiones = () => {
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
-  // Cargar destinos desde Firestore
   useEffect(() => {
     const fetchDestinos = async () => {
       try {
@@ -155,6 +101,58 @@ const AdminExcursiones = () => {
     };
     fetchGuias();
   }, []);
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user || user.role !== "admin") {
+        // Si no hay user o no es admin, redirigimos a home
+        router.push("/");
+      }
+    }
+  }, [user, authLoading, router]);
+
+  // Si sigue cargando auth, no renderizamos nada (ni la redirección)
+  if (authLoading) return null;
+  // Si ya hay user pero su rol NO es admin, retornamos null para que no pinte nada
+  if (user && user.role !== "admin") return null;
+
+  // ================== Sección para LISTADO de excursiones ==================
+
+  const loadExcursions = async () => {
+    try {
+      setLoadingExcursionsList(true);
+      setErrorList("");
+      const snapshot = await getDocs(collection(db, "excursiones"));
+      const data = snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      }));
+      setExcursionsList(data);
+    } catch (err) {
+      console.error("Error al cargar excursiones:", err);
+      setErrorList("Error al cargar excursiones.");
+    } finally {
+      setLoadingExcursionsList(false);
+    }
+  };
+
+  // Función para ELIMINAR una excursión
+  const handleDeleteExcursion = async (excursion) => {
+    const confirmDelete = window.confirm(
+      `¿Estás seguro de que deseas eliminar la excursión con ID: ${excursion.id}?`
+    );
+    if (!confirmDelete) return;
+
+    try {
+      await deleteDoc(doc(db, "excursiones", excursion.id));
+      setExcursionsList((prev) => prev.filter((ex) => ex.id !== excursion.id));
+    } catch (err) {
+      console.error("Error al eliminar la excursión", err);
+      alert("Ocurrió un error al eliminar la excursión.");
+    }
+  };
+
+  // Cargar destinos desde Firestore
 
   // Maneja la creación de Excursión
   const handleCreateExcursion = async (e) => {

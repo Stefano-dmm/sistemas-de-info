@@ -14,7 +14,7 @@ import {
   MenuItem,
   Paper,
 } from "@mui/material";
-import { useRouter } from "next/router"; // <--- Import para redirección
+import { useRouter } from "next/router";
 import Header from "../components/Header";
 import BackgroundLayout from "../components/BackgroundLayout";
 import {
@@ -26,8 +26,9 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { uploadImage } from "../supabase";
-import { useAuth } from "../context/AuthContext"; // <--- Importar tu AuthContext
+import { useAuth } from "../context/AuthContext";
 
+// Función para crear un destino
 const createDestino = async (destinoData, imageFile) => {
   const imageUrl = await uploadImage(imageFile, "avilamet-perfil", "destinos");
   await addDoc(collection(db, "destinos"), {
@@ -41,33 +42,35 @@ const createDestino = async (destinoData, imageFile) => {
 };
 
 const AdminDestinos = () => {
-  // --- Verificación de rol ADMIN ---
   const { user, authLoading } = useAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    // Esperar a que termine el authLoading
-    if (!authLoading) {
-      // Si no hay usuario o no es admin => redirige
-      if (!user || user.role !== "admin") {
-        router.push("/");
-      }
-    }
-  }, [user, authLoading, router]);
-
-  // Si está cargando la auth, retornamos null (o un spinner) para no ver parpadeos
-  if (authLoading) {
-    return null;
-  }
-  // Si ya hay user pero no es admin, también retornamos null para evitar pintarlo
-  if (user && user.role !== "admin") {
-    return null;
-  }
-
-  // ==================== SECCIÓN: LISTADO DE DESTINOS ====================
   const [destinosList, setDestinosList] = useState([]);
   const [loadingDestinosList, setLoadingDestinosList] = useState(true);
   const [errorList, setErrorList] = useState("");
+  const [showCreationForm, setShowCreationForm] = useState(false);
+  const [formData, setFormData] = useState({
+    nombre: "",
+    duracion: "",
+    dificultad: "",
+    link_google_map: "",
+    descripcion: "",
+  });
+  const [imageFile, setImageFile] = useState(null);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  useEffect(() => {
+    loadDestinos();
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading && (!user || user.role !== "admin")) {
+      router.push("/");
+    }
+  }, [user, authLoading, router]);
+
+  if (authLoading) return null;
+  if (user && user.role !== "admin") return null;
 
   const loadDestinos = async () => {
     try {
@@ -87,15 +90,11 @@ const AdminDestinos = () => {
     }
   };
 
-  useEffect(() => {
-    loadDestinos();
-  }, []);
-
   const handleDeleteDestino = async (destino) => {
-    const confirm = window.confirm(
+    const confirmDelete = window.confirm(
       `¿Estás seguro de que deseas eliminar el destino con ID: ${destino.id}?`
     );
-    if (!confirm) return;
+    if (!confirmDelete) return;
     try {
       await deleteDoc(doc(db, "destinos", destino.id));
       setDestinosList((prev) => prev.filter((d) => d.id !== destino.id));
@@ -104,20 +103,6 @@ const AdminDestinos = () => {
       alert("Ocurrió un error al eliminar el destino.");
     }
   };
-
-  // ==================== CREACIÓN DE DESTINO ====================
-  const [showCreationForm, setShowCreationForm] = useState(false);
-  const [formData, setFormData] = useState({
-    nombre: "",
-    duracion: "",
-    dificultad: "",
-    link_google_map: "",
-    descripcion: "",
-  });
-  const [imageFile, setImageFile] = useState(null);
-  const [loadingSubmit, setLoadingSubmit] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -157,7 +142,7 @@ const AdminDestinos = () => {
     try {
       await createDestino(formData, imageFile);
       setSuccess(true);
-      // Limpiar
+      // Reiniciar el formulario
       setFormData({
         nombre: "",
         duracion: "",
@@ -166,7 +151,6 @@ const AdminDestinos = () => {
         descripcion: "",
       });
       setImageFile(null);
-
       loadDestinos();
     } catch (err) {
       console.error("Error al crear el destino:", err);
@@ -322,7 +306,6 @@ const AdminDestinos = () => {
                 onSubmit={handleSubmit}
                 sx={{ display: "flex", flexDirection: "column", gap: 2 }}
               >
-                {/* Campos */}
                 <TextField
                   label="Nombre del destino"
                   name="nombre"
@@ -331,6 +314,7 @@ const AdminDestinos = () => {
                   fullWidth
                   required
                 />
+
                 <FormControl fullWidth required>
                   <InputLabel id="duracion-label">Duración</InputLabel>
                   <Select

@@ -20,7 +20,7 @@ import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 
 const ContactoAdmin = () => {
-  // 1) Primero declaramos todos los HOOKS top-level
+  // Declaración de hooks al inicio del componente
   const [mensajes, setMensajes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,53 +28,48 @@ const ContactoAdmin = () => {
   const { user, authLoading } = useAuth();
   const router = useRouter();
 
-  // 2) useEffect para redireccionar si no es admin
+  // useEffect para redireccionar si el usuario no es admin
   useEffect(() => {
-    if (!authLoading) {
-      if (!user || user.role !== "admin") {
-        router.push("/");
-      }
+    if (!authLoading && (!user || user.role !== "admin")) {
+      router.push("/");
     }
   }, [authLoading, user, router]);
 
-  // 3) useEffect para cargar los mensajes
+  // useEffect para cargar los mensajes
   useEffect(() => {
+    const fetchMensajes = async () => {
+      try {
+        setLoading(true);
+        const q = query(
+          collection(db, "contacto_usuarios"),
+          orderBy("createdAt", "desc")
+        );
+        const querySnapshot = await getDocs(q);
+        const data = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setMensajes(data);
+      } catch (err) {
+        console.error("Error al cargar mensajes:", err);
+        setError("Error al cargar mensajes.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchMensajes();
   }, []);
 
-  // 4) Función para cargar mensajes
-  const fetchMensajes = async () => {
-    try {
-      setLoading(true);
-      const q = query(
-        collection(db, "contacto_usuarios"),
-        orderBy("createdAt", "desc")
-      );
-      const querySnapshot = await getDocs(q);
-      const data = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setMensajes(data);
-    } catch (err) {
-      console.error("Error al cargar mensajes:", err);
-      setError("Error al cargar mensajes.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 5) Retornos condicionales DESPUÉS de los hooks
+  // Condicionales en el renderizado (no afectan la declaración de hooks)
   if (authLoading) {
-    // Si aún está cargando el auth, no pintes nada.
-    return null;
-  }
-  if (user && user.role !== "admin") {
-    // Si ya tenemos user y NO es admin, return null (y el useEffect redireccionará)
     return null;
   }
 
-  // 6) Ahora sí, render del componente normal
+  if (user && user.role !== "admin") {
+    return null;
+  }
+
   return (
     <>
       <Header title="Contacto Admin" />
@@ -87,7 +82,30 @@ const ContactoAdmin = () => {
             <Button
               variant="contained"
               color="success"
-              onClick={fetchMensajes}
+              onClick={() => {
+                // Llamada a la función de recarga de mensajes
+                setLoading(true);
+                setError("");
+                (async () => {
+                  try {
+                    const q = query(
+                      collection(db, "contacto_usuarios"),
+                      orderBy("createdAt", "desc")
+                    );
+                    const querySnapshot = await getDocs(q);
+                    const data = querySnapshot.docs.map((doc) => ({
+                      id: doc.id,
+                      ...doc.data(),
+                    }));
+                    setMensajes(data);
+                  } catch (err) {
+                    console.error("Error al cargar mensajes:", err);
+                    setError("Error al cargar mensajes.");
+                  } finally {
+                    setLoading(false);
+                  }
+                })();
+              }}
               sx={{ textTransform: "none" }}
             >
               Actualizar

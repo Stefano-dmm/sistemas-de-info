@@ -28,6 +28,13 @@ const AdminRoles = () => {
   // --- Verificación de rol ADMIN ---
   const { user, authLoading } = useAuth();
   const router = useRouter();
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [updateMessage, setUpdateMessage] = useState("");
+  const [searchEmail, setSearchEmail] = useState("");
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   useEffect(() => {
     if (!authLoading) {
@@ -39,11 +46,6 @@ const AdminRoles = () => {
 
   if (authLoading) return null;
   if (user && user.role !== "admin") return null;
-
-  const [users, setUsers] = useState([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
-  const [updateMessage, setUpdateMessage] = useState("");
-  const [searchEmail, setSearchEmail] = useState("");
 
   const fetchUsers = async () => {
     try {
@@ -59,10 +61,6 @@ const AdminRoles = () => {
       setLoadingUsers(false);
     }
   };
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
 
   const handleRoleChange = async (userId, newRole) => {
     try {
