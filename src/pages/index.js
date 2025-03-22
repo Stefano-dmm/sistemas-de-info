@@ -17,7 +17,7 @@ import {
 import { useRouter } from "next/router";
 import BackgroundLayout from "../components/BackgroundLayout";
 import Header from "../components/Header";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
 import { db } from "../firebase";
 
 const Home = () => {
@@ -39,7 +39,11 @@ const Home = () => {
   // Función para obtener posts desde Firestore (orden descendente por createdAt)
   const fetchForumPosts = async () => {
     try {
-      const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+      const q = query(
+        collection(db, "posts"),
+        where("isInappropriate", "==", false),
+        orderBy("createdAt", "desc")
+      );
       const querySnapshot = await getDocs(q);
       const posts = querySnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -58,6 +62,7 @@ const Home = () => {
     try {
       const q = query(
         collection(db, "galeria_fotos"),
+        where("isInappropriate", "==", false),
         orderBy("createdAt", "desc")
       );
       const querySnapshot = await getDocs(q);
