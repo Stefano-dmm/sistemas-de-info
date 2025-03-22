@@ -89,6 +89,7 @@ const CalendarioReservas = () => {
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
   const [detailExcursion, setDetailExcursion] = useState(null);
   const [openReservaDialog, setOpenReservaDialog] = useState(false);
+  const [highlightedDays, setHighlightedDays] = useState(null);
 
   // ================== Cargar Excursiones ==================
   useEffect(() => {
@@ -112,6 +113,15 @@ const CalendarioReservas = () => {
         });
 
         setExcursions(excursionsData);
+
+        const dias = new Set(excursionsData.map(({ fecha }) => fecha));
+
+        // Convertimos el Set de fechas a un arreglo de objetos dayjs
+        const highlightedDays = Array.from(dias).map((date) => dayjs(date));
+
+        setHighlightedDays(highlightedDays);
+
+        console.log({ excursionsData });
         setSelectedExcursions(excursionsData);
       } catch (error) {
         console.error("Error al cargar excursiones:", error);
@@ -174,10 +184,22 @@ const CalendarioReservas = () => {
     setSelectedExcursions(filtered);
   };
 
-  // ================== renderDay ==================
-  // Si no quieres resaltar nada, simplemente:
-  const renderDay = (day, _value, DayComponentProps) => {
-    return <PickersDay {...DayComponentProps} />;
+  // ================== Dias disponibles reslatados ==================
+  const renderCustomDay = (props) => {
+    const isHighlighted = highlightedDays.some(
+      (highlightedDay) => highlightedDay.isSame(props.day, "day") // Compara con dayjsDay
+    );
+
+    return (
+      <PickersDay
+        {...props} // Asegúrate de pasar todas las props necesarias, incluidas las de eventos
+        sx={{
+          backgroundColor: isHighlighted ? "lightgreen" : "", // Color de fondo
+          color: isHighlighted ? "black" : "", // Color del texto
+          borderRadius: "30%", // Forma circular
+        }}
+      />
+    );
   };
 
   // ================== Abrir Detalles ==================
@@ -318,7 +340,9 @@ const CalendarioReservas = () => {
                     displayStaticWrapperAs="desktop"
                     value={date}
                     onChange={handleDateChange}
-                    renderDay={renderDay}
+                    slots={{
+                      day: renderCustomDay, // Usamos 'slots' para personalizar el día
+                    }}
                   />
                 </LocalizationProvider>
               </ThemeProvider>
