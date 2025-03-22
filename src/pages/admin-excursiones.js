@@ -36,7 +36,26 @@ const AdminExcursiones = () => {
   const router = useRouter();
   const [excursionsList, setExcursionsList] = useState([]);
   const [loadingExcursionsList, setLoadingExcursionsList] = useState(true);
+
   const [errorList, setErrorList] = useState("");
+  const loadExcursions = async () => {
+    try {
+      setLoadingExcursionsList(true);
+      setErrorList("");
+      const snapshot = await getDocs(collection(db, "excursiones"));
+      const data = snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      }));
+      setExcursionsList(data);
+    } catch (err) {
+      console.error("Error al cargar excursiones:", err);
+      setErrorList("Error al cargar excursiones.");
+    } finally {
+      setLoadingExcursionsList(false);
+    }
+  };
+
   useEffect(() => {
     loadExcursions();
   }, []);
@@ -117,24 +136,6 @@ const AdminExcursiones = () => {
   if (user && user.role !== "admin") return null;
 
   // ================== Sección para LISTADO de excursiones ==================
-
-  const loadExcursions = async () => {
-    try {
-      setLoadingExcursionsList(true);
-      setErrorList("");
-      const snapshot = await getDocs(collection(db, "excursiones"));
-      const data = snapshot.docs.map((docSnap) => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      }));
-      setExcursionsList(data);
-    } catch (err) {
-      console.error("Error al cargar excursiones:", err);
-      setErrorList("Error al cargar excursiones.");
-    } finally {
-      setLoadingExcursionsList(false);
-    }
-  };
 
   // Función para ELIMINAR una excursión
   const handleDeleteExcursion = async (excursion) => {
@@ -265,12 +266,7 @@ const AdminExcursiones = () => {
                     }}
                   >
                     <Box sx={{ textAlign: "left" }}>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ fontWeight: "bold" }}
-                      >
-                        ID: {exc.id}
-                      </Typography>
+                      <Typography variant="subtitle1">ID: {exc.id}</Typography>
                       <Typography variant="body2">
                         Destino: {exc.destino?.nombre || "N/D"}
                       </Typography>

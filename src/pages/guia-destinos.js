@@ -37,15 +37,15 @@ export default function GuiaDestinos() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  // Opcional: si usas useEffect para algo, aquí.
-
-  // 2) VALIDACIONES DE ROL / AUTH
+  // 3) LUEGO LAS VALIDACIONES DE ROL, ETC.
   if (authLoading) {
-    return null; // o un spinner
+    // Mientras carga la auth, evita renderizar
+    return null; // O un spinner
   }
-  if (user && user.role !== "guia") {
+  if (!user || user.role !== "guia") {
+    // Si no hay user o su rol no es guia, redirige
     router.push("/");
-    return null;
+    return null; // Evitas renderizar la UI
   }
 
   // 3) FUNCIONES

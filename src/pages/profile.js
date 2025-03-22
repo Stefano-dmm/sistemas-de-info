@@ -3,6 +3,9 @@ import React, { useState, useEffect } from "react";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Header from "../components/Header";
 import BackgroundLayout from "../components/BackgroundLayout";
+import dayjs from "dayjs";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+dayjs.extend(isSameOrBefore);
 import {
   Box,
   Typography,
@@ -38,14 +41,16 @@ import {
   where,
   getDocs,
   serverTimestamp,
+  setDoc,
 } from "firebase/firestore";
-import { uploadImage } from "../supabase"; // Ajusta la ruta según tu estructura
+import { uploadImage } from "../supabase";
 
+// Estados para perfil
 const Profile = () => {
   const { user } = useAuth();
   const router = useRouter();
 
-  // Estados para mostrar/cargar la info de perfil
+  // Estados de perfil
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -53,28 +58,29 @@ const Profile = () => {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
   const [avatar, setAvatar] = useState("");
-
-  // Guardar el username original para detectar cambios
   const [originalUsername, setOriginalUsername] = useState("");
 
-  // Estados para mostrar mensajes de error/éxito
+  // Estados para mensajes y guardado
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Estados para ver posts
+  // Estados para ver posts y recuerdos (ya existentes)
   const [openPostsDialog, setOpenPostsDialog] = useState(false);
   const [userPosts, setUserPosts] = useState([]);
-
-  // Estados para ver recuerdos (galería)
   const [openRecuerdosDialog, setOpenRecuerdosDialog] = useState(false);
   const [userRecuerdos, setUserRecuerdos] = useState([]);
 
-  // Estado para la selección de un nuevo avatar (archivo)
+  // Estado para avatar nuevo
   const [newAvatarFile, setNewAvatarFile] = useState(null);
 
+  // NUEVOS: Estados para reservas
+  const [reservations, setReservations] = useState([]);
+  const [loadingReservations, setLoadingReservations] = useState(true);
+  const [openReservationsDialog, setOpenReservationsDialog] = useState(false);
+
+  // -------------------- Cargar Perfil --------------------
   useEffect(() => {
-    // Cargar datos de la colección "users" si hay usuario logeado
     const loadUserProfile = async () => {
       if (!user) {
         setLoadingProfile(false);
@@ -103,95 +109,62 @@ const Profile = () => {
     loadUserProfile();
   }, [user]);
 
-  // Cerrar sesión
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.push("/login");
-    } catch (error) {
-      console.error("Error al cerrar sesión:", error);
-    }
-  };
-
-  // Verificar si un username es único
-  const isUsernameUnique = async (newUsername) => {
-    const q = query(
-      collection(db, "users"),
-      where("username", "==", newUsername)
-    );
-    const querySnap = await getDocs(q);
-    if (querySnap.empty) return true;
-    if (querySnap.size === 1) {
-      const docFound = querySnap.docs[0];
-      return docFound.id === user.uid;
-    }
-    return false;
-  };
-
-  // Manejador para seleccionar un nuevo archivo de avatar
-  const handleAvatarFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setNewAvatarFile(e.target.files[0]);
-    }
-  };
-
-  // Guardar cambios en el perfil
-  const handleSaveProfile = async () => {
-    setError("");
-    setSuccess(false);
-
-    // Validar campos
-    if (!firstName.trim() || !lastName.trim() || !username.trim()) {
-      setError("Por favor, completa todos los campos.");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      // Verificar unicidad de username si cambió
-      if (username !== originalUsername) {
-        const unique = await isUsernameUnique(username);
-        if (!unique) {
-          setError("El nombre de usuario ya está en uso.");
-          setSaving(false);
-          return;
-        }
-      }
-
-      let updatedAvatar = avatar;
-      // Si el usuario seleccionó un nuevo archivo, subirlo a Supabase
-      if (newAvatarFile) {
-        updatedAvatar = await uploadImage(
-          newAvatarFile,
-          "avilamet-perfil",
-          "avatars"
+  // -------------------- Cargar Reservas --------------------
+  useEffect(() => {
+    const fetchReservations = async () => {
+      if (!user) return;
+      try {
+        setLoadingReservations(true);
+        const q = query(
+          collection(db, "reservas"),
+          where("userId", "==", user.uid)
         );
+        const querySnap = await getDocs(q);
+        const reservationsData = querySnap.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+        }));
+        // Para obtener el "guia", se consulta la excursión correspondiente
+        const reservationsWithDetails = await Promise.all(
+          reservationsData.map(async (res) => {
+            try {
+              const excursionRef = doc(db, "excursiones", res.excursionId);
+              const excursionSnap = await getDoc(excursionRef);
+              let guiaDisplay = "No asignado";
+              if (excursionSnap.exists()) {
+                const excursionData = excursionSnap.data();
+                // Si el campo 'guia' existe, lo usamos como id para buscar el usuario
+                if (excursionData.guia) {
+                  const userRef = doc(db, "users", excursionData.guia);
+                  const userSnap = await getDoc(userRef);
+                  if (userSnap.exists()) {
+                    const userData = userSnap.data();
+                    guiaDisplay =
+                      userData.username ||
+                      userData.displayName ||
+                      "No asignado";
+                  }
+                }
+              }
+              return { ...res, guia: guiaDisplay };
+            } catch (error) {
+              console.error("Error al cargar excursión:", error);
+              return { ...res, guia: "No asignado" };
+            }
+          })
+        );
+        setReservations(reservationsWithDetails);
+      } catch (err) {
+        console.error("Error al cargar reservas:", err);
+      } finally {
+        setLoadingReservations(false);
       }
+    };
 
-      // Actualizar en Firestore
-      const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, {
-        firstName,
-        lastName,
-        username,
-        avatar: updatedAvatar,
-        updatedAt: serverTimestamp(),
-      });
+    fetchReservations();
+  }, [user]);
 
-      // Actualizar estado local
-      setAvatar(updatedAvatar);
-      setSuccess(true);
-      setOriginalUsername(username);
-      setNewAvatarFile(null);
-    } catch (err) {
-      console.error("Error al guardar perfil:", err);
-      setError("Error al guardar los cambios.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Abrir el diálogo para ver posts del usuario
+  // -------------------- Funciones para abrir diálogos --------------------
   const handleOpenPosts = async () => {
     try {
       const q = query(collection(db, "posts"), where("uid", "==", user.uid));
@@ -207,7 +180,6 @@ const Profile = () => {
     }
   };
 
-  // Abrir el diálogo para ver recuerdos (galería) del usuario
   const handleOpenRecuerdos = async () => {
     try {
       const q = query(
@@ -226,6 +198,96 @@ const Profile = () => {
     }
   };
 
+  const handleOpenReservationsDialog = () => {
+    setOpenReservationsDialog(true);
+  };
+
+  // -------------------- Cerrar Sesión --------------------
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push("/login");
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    }
+  };
+
+  // -------------------- Guardar Perfil --------------------
+  const handleSaveProfile = async () => {
+    setError("");
+    setSuccess(false);
+
+    if (!firstName.trim() || !lastName.trim() || !username.trim()) {
+      setError("Por favor, completa todos los campos.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      if (username !== originalUsername) {
+        // Verificar que el username sea único
+        const q = query(
+          collection(db, "users"),
+          where("username", "==", username)
+        );
+        const querySnap = await getDocs(q);
+        if (!querySnap.empty && querySnap.size !== 1) {
+          setError("El nombre de usuario ya está en uso.");
+          setSaving(false);
+          return;
+        }
+      }
+
+      let updatedAvatar = avatar;
+      if (newAvatarFile) {
+        updatedAvatar = await uploadImage(
+          newAvatarFile,
+          "avilamet-perfil",
+          "avatars"
+        );
+      }
+
+      const userRef = doc(db, "users", user.uid);
+      await updateDoc(userRef, {
+        firstName,
+        lastName,
+        username,
+        avatar: updatedAvatar,
+        updatedAt: serverTimestamp(),
+      });
+
+      setAvatar(updatedAvatar);
+      setSuccess(true);
+      setOriginalUsername(username);
+      setNewAvatarFile(null);
+    } catch (err) {
+      console.error("Error al guardar perfil:", err);
+      setError("Error al guardar los cambios.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // -------------------- Función para seleccionar archivo de avatar --------------------
+  const handleAvatarFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setNewAvatarFile(e.target.files[0]);
+    }
+  };
+
+  // -------------------- Función para filtrar reservas por fecha (asistidas y pendientes) --------------------
+  const getReservationsByStatus = () => {
+    const today = dayjs();
+    const asistidas = reservations.filter((res) =>
+      dayjs(res.fechaExcursion.toDate()).isSameOrBefore(today, "day")
+    );
+    const pendientes = reservations.filter((res) =>
+      dayjs(res.fechaExcursion.toDate()).isAfter(today, "day")
+    );
+    return { asistidas, pendientes };
+  };
+
+  // -------------------- Render de la UI --------------------
   if (loadingProfile) {
     return (
       <ProtectedRoute>
@@ -273,7 +335,7 @@ const Profile = () => {
           />
         </Box>
 
-        {/* Contenido principal en cuadro blanco centrado */}
+        {/* Contenido principal */}
         <Box
           sx={{
             minHeight: "60vh",
@@ -313,7 +375,6 @@ const Profile = () => {
               >
                 {!avatar && username ? username.charAt(0).toUpperCase() : null}
               </Avatar>
-              {/* Rol en cuadro verde */}
               <Box
                 sx={{
                   backgroundColor:
@@ -415,6 +476,14 @@ const Profile = () => {
                 >
                   Ver posts
                 </Button>
+                {/* Botón para mostrar reservas (excursiones) */}
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleOpenReservationsDialog}
+                >
+                  Excursiones: {reservations.length}
+                </Button>
                 <Button variant="outlined" color="error" onClick={handleLogout}>
                   Cerrar sesión
                 </Button>
@@ -424,7 +493,7 @@ const Profile = () => {
         </Box>
       </BackgroundLayout>
 
-      {/* Dialog para mostrar los posts del usuario */}
+      {/* Dialog para ver Posts */}
       <Dialog
         open={openPostsDialog}
         onClose={() => setOpenPostsDialog(false)}
@@ -459,7 +528,7 @@ const Profile = () => {
                         transition: "transform 0.3s ease",
                       },
                     }}
-                    onClick={() => router.push("/foro")} // O "/foro/[id]" si deseas un post específico
+                    onClick={() => router.push("/foro")}
                   >
                     <CardHeader
                       avatar={
@@ -474,9 +543,7 @@ const Profile = () => {
                         </Avatar>
                       }
                       title={
-                        <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                          {post.username}
-                        </Typography>
+                        <Typography variant="h6">{post.username}</Typography>
                       }
                     />
                     {post.postImage && (
@@ -491,7 +558,7 @@ const Profile = () => {
                       <Typography variant="body1">{post.content}</Typography>
                     </CardContent>
                     <CardActions sx={{ justifyContent: "flex-end" }}>
-                      <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                      <Typography variant="body2">
                         Respuestas: {post.replies ?? 0}
                       </Typography>
                     </CardActions>
@@ -503,7 +570,7 @@ const Profile = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog para mostrar los recuerdos (fotos en la galería) del usuario */}
+      {/* Dialog para ver Recuerdos */}
       <Dialog
         open={openRecuerdosDialog}
         onClose={() => setOpenRecuerdosDialog(false)}
@@ -538,7 +605,7 @@ const Profile = () => {
                         transition: "transform 0.3s ease",
                       },
                     }}
-                    onClick={() => router.push("/galeria")} // O "/galeria/[id]" si deseas un recuerdo específico
+                    onClick={() => router.push("/galeria")}
                   >
                     <CardHeader
                       avatar={
@@ -553,15 +620,13 @@ const Profile = () => {
                         </Avatar>
                       }
                       title={
-                        <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                          {rec.username}
-                        </Typography>
+                        <Typography variant="h6">{rec.username}</Typography>
                       }
                     />
                     <CardMedia
                       component="img"
                       image={rec.imagen}
-                      alt={rec.nombre}
+                      alt="Imagen Recuerdo"
                       sx={{ height: 200, objectFit: "cover" }}
                     />
                     <CardContent>
@@ -574,6 +639,120 @@ const Profile = () => {
             </Grid>
           )}
         </DialogContent>
+      </Dialog>
+
+      {/* Dialog para ver Reservas */}
+      <Dialog
+        open={openReservationsDialog}
+        onClose={() => setOpenReservationsDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Mis Excursiones
+          <IconButton
+            onClick={() => setOpenReservationsDialog(false)}
+            sx={{ position: "absolute", right: 8, top: 8 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          {loadingReservations ? (
+            <Box sx={{ textAlign: "center", py: 2 }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : reservations.length === 0 ? (
+            <Typography variant="body2" sx={{ fontStyle: "italic" }}>
+              No tienes reservas.
+            </Typography>
+          ) : (
+            <>
+              <Typography variant="subtitle1">
+                Excursiones Asistidas:
+              </Typography>
+              {reservations.filter((res) =>
+                dayjs(res.fechaExcursion.toDate()).isSameOrBefore(
+                  dayjs(),
+                  "day"
+                )
+              ).length === 0 ? (
+                <Typography>No tienes excursiones asistidas.</Typography>
+              ) : (
+                reservations
+                  .filter((res) =>
+                    dayjs(res.fechaExcursion.toDate()).isSameOrBefore(
+                      dayjs(),
+                      "day"
+                    )
+                  )
+                  .map((res) => (
+                    <Box
+                      key={res.id}
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        mb: 1,
+                      }}
+                    >
+                      <Typography>{res.excursionName}</Typography>
+                      <Typography>
+                        {dayjs(res.fechaExcursion.toDate()).format(
+                          "DD/MM/YYYY"
+                        )}
+                      </Typography>
+                      <Typography>{res.guia}</Typography>
+                    </Box>
+                  ))
+              )}
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle1">
+                  Excursiones Pendientes:
+                </Typography>
+                {reservations.filter((res) =>
+                  dayjs(res.fechaExcursion.toDate()).isAfter(dayjs(), "day")
+                ).length === 0 ? (
+                  <Typography>No tienes excursiones pendientes.</Typography>
+                ) : (
+                  reservations
+                    .filter((res) =>
+                      dayjs(res.fechaExcursion.toDate()).isAfter(dayjs(), "day")
+                    )
+                    .map((res) => (
+                      <Box
+                        key={res.id}
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          mb: 1,
+                        }}
+                      >
+                        <Typography>{res.excursionName}</Typography>
+                        <Typography>
+                          {dayjs(res.fechaExcursion.toDate()).format(
+                            "DD/MM/YYYY"
+                          )}
+                        </Typography>
+                        <Typography>{res.guia}</Typography>
+                      </Box>
+                    ))
+                )}
+              </Box>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => {
+              setOpenReservationsDialog(false);
+              router.push("/donativos");
+            }}
+          >
+            Ir a Donaciones
+          </Button>
+        </DialogActions>
       </Dialog>
     </ProtectedRoute>
   );

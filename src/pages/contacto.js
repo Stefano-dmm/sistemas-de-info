@@ -109,20 +109,17 @@ const Contacto = () => {
                     backgroundColor: "rgba(255,255,255,0.9)",
                   }}
                 >
-                  <Typography variant="h5" sx={{ fontWeight: "bold", mb: 2 }}>
-                    Datos de Contacto
-                  </Typography>
+                  <Typography variant="h5">Datos de Contacto</Typography>
                   <Typography variant="body1" sx={{ mb: 1 }}>
-                    <strong>Teléfono:</strong> +58 212-240-3511
+                    Teléfono: +58 212-240-3511
                   </Typography>
                   <Typography variant="body1" sx={{ mb: 3 }}>
-                    <strong>Email:</strong> info@avilamet.com
+                    Email: info@avilamet.com
                   </Typography>
 
                   <Typography variant="body1" sx={{ mb: 1 }}>
-                    <strong>Dirección:</strong>
-                    Universidad Metropolitana, Terrazas del Ávila, Caracas,
-                    Venezuela.
+                    Dirección: Universidad Metropolitana, Terrazas del Ávila,
+                    Caracas, Venezuela.
                   </Typography>
                 </Paper>
 
@@ -156,9 +153,7 @@ const Contacto = () => {
                     backgroundColor: "rgba(255,255,255,0.9)",
                   }}
                 >
-                  <Typography variant="h5" sx={{ fontWeight: "bold", mb: 2 }}>
-                    Envíanos tu mensaje
-                  </Typography>
+                  <Typography variant="h5">Envíanos tu mensaje</Typography>
                   {error && (
                     <Alert severity="error" sx={{ mb: 2 }}>
                       {error}

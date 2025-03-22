@@ -79,7 +79,7 @@ const Header = () => {
             variant="h6"
             component="div"
             sx={{
-              fontWeight: 700,
+              fontWeight: 400,
               letterSpacing: "0.5px",
               display: { xs: "none", sm: "block" },
             }}
@@ -103,6 +103,13 @@ const Header = () => {
                   >
                     Admin Destinos
                   </MenuItem>
+
+                  <MenuItem
+                    onClick={() => handleMenuItemClick("/admin-moderacion")}
+                  >
+                    Admin Moderación
+                  </MenuItem>
+
                   <MenuItem
                     onClick={() => handleMenuItemClick("/admin-excursiones")}
                   >
@@ -171,7 +178,7 @@ const Header = () => {
                 onClick={() => router.push("/login")}
                 sx={{
                   textTransform: "none",
-                  fontWeight: 500,
+                  fontWeight: 400,
                   borderRadius: "8px",
                   px: 2,
                   py: 1,

@@ -14,6 +14,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
   CircularProgress,
   TextField,
   IconButton,
@@ -21,6 +22,7 @@ import {
   FormControl,
   Select,
   InputLabel,
+  Skeleton,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import Header from "../components/Header";
@@ -34,9 +36,11 @@ import {
   updateDoc,
   query,
   orderBy,
+  where,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
+import { useRouter } from "next/router";
 
 // Componente de buscador unificado con selector de criterio
 const UnifiedSearchBar = ({
@@ -78,10 +82,15 @@ const getUsername = (user) => {
 };
 
 /**
- * Obtiene todos los posts de la colección "posts", ordenados por fecha descendente
+ * Obtiene todos los posts de la colección "posts", ordenados por fecha descendente.
+ * Ahora se consulta solo los posts que no están marcados como inapropiados.
  */
 async function fetchPosts() {
-  const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+  const q = query(
+    collection(db, "posts"),
+    where("isInappropriate", "==", false),
+    orderBy("createdAt", "desc")
+  );
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map((docSnap) => ({
     id: docSnap.id,
@@ -124,8 +133,8 @@ const Foro = () => {
   const [newContent, setNewContent] = useState("");
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState("");
-
   const { user } = useAuth();
+  const router = useRouter();
 
   // Cargar posts al montar el componente
   useEffect(() => {
@@ -146,9 +155,7 @@ const Foro = () => {
   // Filtrar posts según el criterio y término de búsqueda
   useEffect(() => {
     const filtered = forumPosts.filter((post) => {
-      // Si no se ingresa término, se muestran todos
       if (searchTerm.trim() === "") return true;
-
       if (searchCriterion === "usuario") {
         return post.username.toLowerCase().includes(searchTerm.toLowerCase());
       } else if (searchCriterion === "contenido") {
@@ -180,11 +187,10 @@ const Foro = () => {
     setNewResponse("");
   };
 
-  // Agregar respuesta: después de agregar, se vuelve a contar la subcolección y se actualiza el campo "replies"
+  // Agregar respuesta y actualizar el post
   const handleAddResponse = async () => {
     if (!user) return;
     if (!newResponse.trim()) return;
-
     setResponseLoading(true);
     try {
       await addDoc(collection(db, "posts", selectedPost.id, "responses"), {
@@ -219,7 +225,7 @@ const Foro = () => {
     setOpenCreate(false);
   };
 
-  // Crear nuevo post
+  // Crear nuevo post, agregando el campo "isInappropriate" como false por defecto
   const handleCreatePost = async () => {
     if (!newContent.trim()) {
       setCreateError("Por favor, ingresa el contenido de la conversación.");
@@ -233,6 +239,7 @@ const Foro = () => {
         userAvatar: user.avatar || "",
         content: newContent.trim(),
         replies: 0,
+        isInappropriate: false, // Campo agregado
         createdAt: serverTimestamp(),
         uid: user.uid,
       });
@@ -248,11 +255,34 @@ const Foro = () => {
     }
   };
 
+  // Función para marcar un post como inapropiado (para guías y admin)
+  // Al marcarlo, se actualiza el campo y se redirige a la página de moderación,
+  // por lo que el post ya no se mostrará en el foro.
+  const handleMarcarInapropiado = async () => {
+    if (!selectedPost) return;
+    try {
+      await updateDoc(doc(db, "posts", selectedPost.id), {
+        isInappropriate: true,
+      });
+      // Eliminamos el post de la lista local para que desaparezca de la vista
+      setForumPosts(forumPosts.filter((post) => post.id !== selectedPost.id));
+      // Cerramos el diálogo
+      setSelectedPost(null);
+      setOpenDialog(false);
+    } catch (error) {
+      console.error("Error al marcar como inapropiado:", error);
+    }
+  };
+
+  const isAuthPage = ["/login", "/register"].includes(router.pathname);
+  const isHomePage = router.pathname === "/";
+  const showBackButton = !isHomePage && !isAuthPage;
+
   return (
     <>
       <Header title="Foro" />
       <BackgroundLayout>
-        {/* Banner Original */}
+        {/* Banner */}
         <Box
           sx={{
             display: "flex",
@@ -278,11 +308,8 @@ const Foro = () => {
         </Box>
 
         <Container maxWidth="lg">
-          {/* Sección "Lo Más Relevante Hoy": Mostrar solo los 3 posts más recientes */}
-          <Typography
-            variant="h4"
-            sx={{ mb: 4, fontWeight: "bold", color: "#a6ff99" }}
-          >
+          {/* Sección "Lo Más Relevante Hoy" */}
+          <Typography variant="h4" sx={{ color: "#a6ff99" }}>
             Lo Más Relevante Hoy:
           </Typography>
           {loadingPosts ? (
@@ -318,16 +345,14 @@ const Foro = () => {
                         </Avatar>
                       }
                       title={
-                        <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                          {post.username}
-                        </Typography>
+                        <Typography variant="h6">{post.username}</Typography>
                       }
                     />
                     <CardContent>
                       <Typography variant="body1">{post.content}</Typography>
                     </CardContent>
                     <CardActions sx={{ justifyContent: "flex-end" }}>
-                      <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                      <Typography variant="body2">
                         Respuestas: {post.replies ?? 0}
                       </Typography>
                     </CardActions>
@@ -337,7 +362,7 @@ const Foro = () => {
             </Grid>
           )}
 
-          {/* Buscador unificado con fondo blanco */}
+          {/* Buscador unificado */}
           <Box sx={{ backgroundColor: "white", p: 2, borderRadius: 1, mb: 4 }}>
             <UnifiedSearchBar
               searchCriterion={searchCriterion}
@@ -381,16 +406,14 @@ const Foro = () => {
                         </Avatar>
                       }
                       title={
-                        <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                          {post.username}
-                        </Typography>
+                        <Typography variant="h6">{post.username}</Typography>
                       }
                     />
                     <CardContent>
                       <Typography variant="body1">{post.content}</Typography>
                     </CardContent>
                     <CardActions sx={{ justifyContent: "flex-end" }}>
-                      <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                      <Typography variant="body2">
                         Respuestas: {post.replies ?? 0}
                       </Typography>
                     </CardActions>
@@ -402,7 +425,7 @@ const Foro = () => {
         </Container>
       </BackgroundLayout>
 
-      {/* Dialog para mostrar detalles del post y responder */}
+      {/* Dialog para ver detalles del post */}
       {selectedPost && (
         <Dialog
           open={openDialog}
@@ -431,7 +454,7 @@ const Foro = () => {
             <Typography variant="body1" sx={{ mb: 2 }}>
               {selectedPost.content}
             </Typography>
-            <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 1 }}>
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>
               Respuestas:
             </Typography>
             {responses.length === 0 ? (
@@ -441,9 +464,7 @@ const Foro = () => {
             ) : (
               responses.map((resp) => (
                 <Box key={resp.id} sx={{ mb: 2 }}>
-                  <Typography variant="body2" sx={{ fontWeight: "bold" }}>
-                    {resp.username}
-                  </Typography>
+                  <Typography variant="body2">{resp.username}</Typography>
                   <Typography variant="body2" sx={{ ml: 2 }}>
                     {resp.content}
                   </Typography>
@@ -452,9 +473,7 @@ const Foro = () => {
             )}
             {user ? (
               <Box sx={{ mt: 3 }}>
-                <Typography variant="body2" sx={{ fontWeight: "bold", mb: 1 }}>
-                  Agrega tu respuesta:
-                </Typography>
+                <Typography variant="body2">Agrega tu respuesta:</Typography>
                 <Box sx={{ display: "flex", gap: 1 }}>
                   <TextField
                     variant="outlined"
@@ -483,11 +502,26 @@ const Foro = () => {
                 Debes iniciar sesión para responder.
               </Typography>
             )}
+            {/* Botón para marcar post como inapropiado (solo para guía o admin) */}
+            {user &&
+              (user.role === "guia" || user.role === "admin") &&
+              !selectedPost.isInappropriate && (
+                <Box sx={{ mt: 3 }}>
+                  <Button
+                    variant="contained"
+                    color="warning"
+                    onClick={handleMarcarInapropiado}
+                    sx={{ textTransform: "none" }}
+                  >
+                    Marcar como inapropiado
+                  </Button>
+                </Box>
+              )}
           </DialogContent>
         </Dialog>
       )}
 
-      {/* Pie de página fijo con botón para iniciar conversación */}
+      {/* Footer fijo para crear un nuevo post (solo para usuarios logueados) */}
       {user && (
         <Box
           sx={{

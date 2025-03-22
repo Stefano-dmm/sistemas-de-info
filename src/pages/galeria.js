@@ -30,7 +30,12 @@ import {
   getDocs,
   addDoc,
   serverTimestamp,
-} from "firebase/firestore";
+  updateDoc,
+  doc,
+  query,
+  where,
+  orderBy,
+} from "firebase/firestore"; // Importamos query, where, orderBy
 import { db } from "../firebase";
 import { uploadImage } from "../supabase";
 import { useAuth } from "../context/AuthContext";
@@ -96,14 +101,22 @@ const Galeria = () => {
 
   const { user } = useAuth();
 
-  // Cargar fotos desde Firestore
+  // Cargar fotos desde Firestore, solo las que no estén marcadas como inapropiadas
   useEffect(() => {
     const fetchGalleryPhotos = async () => {
+      setLoadingGallery(true);
       try {
-        const querySnapshot = await getDocs(collection(db, "galeria_fotos"));
-        const photos = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
+        // Usamos la consulta con where("isInappropriate", "==", false)
+        // y orderBy("createdAt", "desc") si deseas ordenarlas por fecha
+        const q = query(
+          collection(db, "galeria_fotos"),
+          where("isInappropriate", "==", false),
+          orderBy("createdAt", "desc")
+        );
+        const querySnapshot = await getDocs(q);
+        const photos = querySnapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
         }));
         setGalleryPhotos(photos);
       } catch (error) {
@@ -142,6 +155,25 @@ const Galeria = () => {
   const handleCloseDialog = () => {
     setSelectedPhoto(null);
     setOpenDialog(false);
+  };
+
+  // Función para marcar la foto como inapropiada
+  const handleMarkInappropriate = async () => {
+    if (!selectedPhoto) return;
+    try {
+      await updateDoc(doc(db, "galeria_fotos", selectedPhoto.id), {
+        isInappropriate: true,
+      });
+      // Actualizamos el estado local para que la foto ya no aparezca en la lista
+      setGalleryPhotos(
+        galleryPhotos.filter((photo) => photo.id !== selectedPhoto.id)
+      );
+      // Cerramos el diálogo
+      setSelectedPhoto(null);
+      setOpenDialog(false);
+    } catch (error) {
+      console.error("Error al marcar la imagen como inapropiada:", error);
+    }
   };
 
   // Manejo del formulario de subida
@@ -205,15 +237,23 @@ const Galeria = () => {
         username: getDisplayUsername(user),
         userAvatar: user.avatar || "",
         createdAt: serverTimestamp(),
+        isInappropriate: false, // Campo agregado para moderación
       });
       setUploadSuccess("Imagen agregada a la galería exitosamente.");
-      // Recargar la galería
-      const querySnapshot = await getDocs(collection(db, "galeria_fotos"));
-      const photos = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
+
+      // Volvemos a cargar solo las fotos isInappropriate: false
+      const q = query(
+        collection(db, "galeria_fotos"),
+        where("isInappropriate", "==", false),
+        orderBy("createdAt", "desc")
+      );
+      const querySnapshot = await getDocs(q);
+      const photos = querySnapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data(),
       }));
       setGalleryPhotos(photos);
+
       // Limpiar formulario
       setFormData({ nombre: "", descripcion: "" });
       setImageFile(null);
@@ -333,6 +373,19 @@ const Galeria = () => {
                 {selectedPhoto.descripcion}
               </Typography>
             </Box>
+            {user &&
+              (user.role === "guia" || user.role === "admin") &&
+              !selectedPhoto.isInappropriate && (
+                <Box sx={{ textAlign: "center", mt: 2 }}>
+                  <Button
+                    variant="contained"
+                    color="warning"
+                    onClick={handleMarkInappropriate}
+                  >
+                    Marcar como inapropiado
+                  </Button>
+                </Box>
+              )}
           </DialogContent>
         </Dialog>
       )}

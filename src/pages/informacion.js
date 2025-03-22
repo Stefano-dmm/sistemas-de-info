@@ -48,9 +48,7 @@ const Informacion = () => {
                 mb: 4,
               }}
             >
-              <Typography variant="h5" sx={{ fontWeight: "bold", mb: 2 }}>
-                IMPORTANTE
-              </Typography>
+              <Typography variant="h5">IMPORTANTE</Typography>
               <Typography variant="body1" sx={{ mb: 3 }}>
                 Se recuerda que la seguridad es vital en todo momento, las
                 excursiones están principalmente enfocadas a la recreación y
@@ -81,7 +79,7 @@ const Informacion = () => {
                   variant="contained"
                   color="success"
                   fullWidth
-                  sx={{ textTransform: "none", fontWeight: "bold" }}
+                  sx={{ textTransform: "none" }}
                   onClick={() => router.push("/donativos")}
                 >
                   Donaciones
@@ -92,7 +90,7 @@ const Informacion = () => {
                   variant="contained"
                   color="success"
                   fullWidth
-                  sx={{ textTransform: "none", fontWeight: "bold" }}
+                  sx={{ textTransform: "none" }}
                   onClick={() => router.push("/foro")}
                 >
                   Foro

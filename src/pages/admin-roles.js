@@ -32,20 +32,6 @@ const AdminRoles = () => {
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [updateMessage, setUpdateMessage] = useState("");
   const [searchEmail, setSearchEmail] = useState("");
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  useEffect(() => {
-    if (!authLoading) {
-      if (!user || user.role !== "admin") {
-        router.push("/");
-      }
-    }
-  }, [user, authLoading, router]);
-
-  if (authLoading) return null;
-  if (user && user.role !== "admin") return null;
 
   const fetchUsers = async () => {
     try {
@@ -61,6 +47,21 @@ const AdminRoles = () => {
       setLoadingUsers(false);
     }
   };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user || user.role !== "admin") {
+        router.push("/");
+      }
+    }
+  }, [user, authLoading, router]);
+
+  if (authLoading) return null;
+  if (user && user.role !== "admin") return null;
 
   const handleRoleChange = async (userId, newRole) => {
     try {

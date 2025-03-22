@@ -132,10 +132,7 @@ const ContactoAdmin = () => {
                 <Grid item xs={12} key={mensaje.id}>
                   <Card sx={{ p: 2 }}>
                     <CardContent>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ fontWeight: "bold" }}
-                      >
+                      <Typography variant="subtitle1">
                         {mensaje.nombre} - {mensaje.email}
                       </Typography>
                       <Typography variant="body2" sx={{ mt: 1 }}>

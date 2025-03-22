@@ -24,7 +24,7 @@ const Home = () => {
   const router = useRouter();
   const buttonStyle = {
     textTransform: "none",
-    fontWeight: 500,
+    fontWeight: 400,
     borderRadius: "8px",
     px: 2,
     py: 1,
@@ -221,7 +221,6 @@ const Home = () => {
               variant="h5"
               sx={{
                 mb: 2,
-                fontWeight: "bold",
                 textAlign: "left",
                 color: "#a6ff99",
               }}
@@ -250,19 +249,14 @@ const Home = () => {
                     >
                       <CardHeader
                         title={
-                          <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                            {post.username}
-                          </Typography>
+                          <Typography variant="h6">{post.username}</Typography>
                         }
                       />
                       <CardContent>
                         <Typography variant="body1">{post.content}</Typography>
                       </CardContent>
                       <CardActions sx={{ justifyContent: "flex-end" }}>
-                        <Typography
-                          variant="caption"
-                          sx={{ fontWeight: "bold" }}
-                        >
+                        <Typography variant="caption">
                           Respuestas: {post.replies ?? 0}
                         </Typography>
                       </CardActions>
@@ -281,7 +275,6 @@ const Home = () => {
               variant="h5"
               sx={{
                 mb: 2,
-                fontWeight: "bold",
                 textAlign: "right",
                 color: "#a6ff99",
               }}

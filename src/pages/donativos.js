@@ -67,9 +67,7 @@ const Donativos = () => {
                 mb: 4,
               }}
             >
-              <Typography variant="h5" sx={{ mb: 2, fontWeight: "bold" }}>
-                IMPORTANTE
-              </Typography>
+              <Typography variant="h5">IMPORTANTE</Typography>
               <Typography variant="body1">
                 Muchas gracias por todo y cada uno de los donativos que deseen
                 llevar a cabo. Estos donativos van directamente a la mejora de
@@ -97,7 +95,7 @@ const Donativos = () => {
                 onClick={handleOpenDialog}
                 sx={{
                   textTransform: "none",
-                  fontWeight: "bold",
+
                   borderRadius: "8px",
                   px: 3,
                   py: 1.5,
@@ -119,9 +117,7 @@ const Donativos = () => {
               justifyContent: "space-between",
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-              Donar con PayPal
-            </Typography>
+            <Typography variant="h6">Donar con PayPal</Typography>
             <IconButton onClick={handleCloseDialog}>
               <CloseIcon />
             </IconButton>
@@ -136,7 +132,6 @@ const Donativos = () => {
             <Button
               variant="contained"
               color="success"
-              sx={{ textTransform: "none", fontWeight: "bold" }}
               onClick={handleDonateWithPayPal}
             >
               Donar con PayPal

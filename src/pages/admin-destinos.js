@@ -59,19 +59,8 @@ const AdminDestinos = () => {
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  useEffect(() => {
-    loadDestinos();
-  }, []);
 
-  useEffect(() => {
-    if (!authLoading && (!user || user.role !== "admin")) {
-      router.push("/");
-    }
-  }, [user, authLoading, router]);
-
-  if (authLoading) return null;
-  if (user && user.role !== "admin") return null;
-
+  // Definir loadDestinos antes de usarlo
   const loadDestinos = async () => {
     try {
       setLoadingDestinosList(true);
@@ -89,6 +78,19 @@ const AdminDestinos = () => {
       setLoadingDestinosList(false);
     }
   };
+
+  useEffect(() => {
+    loadDestinos();
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading && (!user || user.role !== "admin")) {
+      router.push("/");
+    }
+  }, [user, authLoading, router]);
+
+  if (authLoading) return null;
+  if (user && user.role !== "admin") return null;
 
   const handleDeleteDestino = async (destino) => {
     const confirmDelete = window.confirm(
@@ -207,9 +209,7 @@ const AdminDestinos = () => {
                   }}
                 >
                   <Box sx={{ textAlign: "left" }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-                      ID: {dest.id}
-                    </Typography>
+                    <Typography variant="subtitle1">ID: {dest.id}</Typography>
                     <Typography variant="body2">
                       Nombre: {dest.nombre || "N/D"}
                     </Typography>

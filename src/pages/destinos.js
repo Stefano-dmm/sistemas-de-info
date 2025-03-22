@@ -18,10 +18,12 @@ import {
 import Header from "../components/Header";
 import BackgroundLayout from "../components/BackgroundLayout";
 import CloseIcon from "@mui/icons-material/Close";
+import { useRouter } from "next/router";
 import { db } from "../firebase";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 
 const Destinos = () => {
+  const router = useRouter();
   const [destinos, setDestinos] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedDestino, setSelectedDestino] = useState(null);
@@ -122,10 +124,10 @@ const Destinos = () => {
                         {destino.nombre}
                       </Typography>
                       <Typography variant="body1">
-                        <strong>Dificultad:</strong> {destino.dificultad}
+                        Dificultad:{destino.dificultad}
                       </Typography>
                       <Typography variant="body1">
-                        <strong>Tiempo:</strong> {destino.duracion}
+                        Tiempo: {destino.duracion}
                       </Typography>
                     </CardContent>
                   </Card>
@@ -174,13 +176,13 @@ const Destinos = () => {
               />
             </Box>
             <Typography variant="body1">
-              <strong>Dificultad:</strong> {selectedDestino.dificultad}
+              Dificultad: {selectedDestino.dificultad}
             </Typography>
             <Typography variant="body1">
-              <strong>Duración:</strong> {selectedDestino.duracion}
+              Duración: {selectedDestino.duracion}
             </Typography>
             <Typography variant="body1" sx={{ mt: 2 }}>
-              <strong>Descripción:</strong> {selectedDestino.descripcion}
+              Descripción: {selectedDestino.descripcion}
             </Typography>
           </DialogContent>
           <DialogActions>
@@ -193,7 +195,12 @@ const Destinos = () => {
             >
               Ver en Google Maps
             </Button>
-            <Button variant="contained" color="secondary" sx={{ mb: 1 }}>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={() => router.push("/calendario")}
+              sx={{ mb: 1 }}
+            >
               Reservar
             </Button>
           </DialogActions>
